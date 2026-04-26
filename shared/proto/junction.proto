@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package junction;
+
+service SwitcherControl {
+  rpc SwitchSource(SwitchSourceRequest) returns (SwitchSourceResponse);
+  rpc GetTelemetry(GetTelemetryRequest) returns (TelemetryResponse);
+}
+
+message SwitchSourceRequest {
+  string source_id = 1;
+}
+
+message SwitchSourceResponse {
+  bool success = 1;
+  string active_source_id = 2;
+}
+
+message GetTelemetryRequest {}
+
+message TelemetryResponse {
+  double cpu_percent = 1;
+  double temperature_celsius = 2;
+}
