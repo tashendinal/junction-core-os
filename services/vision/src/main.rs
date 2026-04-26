@@ -7,12 +7,15 @@ use axum::{
     routing::get,
     Router,
 };
+use futures_util::{SinkExt, StreamExt};
 use rand::seq::SliceRandom;
-use serde_json::json;
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use std::ffi::{c_char, c_uint, c_void, CStr};
 use std::net::SocketAddr;
 use std::ptr;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use tokio::sync::broadcast;
 use tokio::time::{sleep, Duration};
 
 #[repr(C)]
@@ -40,10 +43,21 @@ struct CameraNode {
     latency_buffer: u32,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+struct SwitcherState {
+    program_id: String,
+    preview_id: String,
+    /// 0.0 — 1.0 mix position (preview → program).
+    tbar: f64,
+    revision: u64,
+}
+
 #[derive(Clone)]
 struct AppState {
     dev_mode: bool,
     latency_buffer: u32,
+    switcher: Arc<Mutex<SwitcherState>>,
+    switcher_tx: broadcast::Sender<String>,
 }
 
 fn discover_cameras(latency_buffer: u32) -> Vec<CameraNode> {
@@ -62,7 +76,6 @@ fn discover_cameras(latency_buffer: u32) -> Vec<CameraNode> {
             return cameras;
         }
 
-        // Wait briefly for network sources to appear via NDI discovery.
         let _ = NDIlib_find_wait_for_sources(finder, 3_000);
 
         let mut source_count: c_uint = 0;
@@ -92,31 +105,102 @@ fn discover_cameras(latency_buffer: u32) -> Vec<CameraNode> {
     cameras
 }
 
-async fn ws_handler(
-    ws: WebSocketUpgrade,
-    State(state): State<Arc<AppState>>,
-) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| stream_sources(socket, state))
+fn switcher_payload(state: &SwitcherState) -> String {
+    json!({
+        "type": "switcher",
+        "programId": state.program_id,
+        "previewId": state.preview_id,
+        "tbar": state.tbar,
+        "revision": state.revision,
+    })
+    .to_string()
 }
 
-async fn stream_sources(mut socket: WebSocket, state: Arc<AppState>) {
-    loop {
-        let cameras = discover_cameras(state.latency_buffer);
-        let mut sources: Vec<String> = cameras.into_iter().map(|cam| cam.source_name).collect();
+fn apply_switcher_message(state: &Mutex<SwitcherState>, body: &Value, switcher_tx: &broadcast::Sender<String>) {
+    let mut s = state.lock().expect("switcher lock");
+    if let Some(p) = body.get("programId").and_then(|x| x.as_str()) {
+        s.program_id = p.to_string();
+    }
+    if let Some(p) = body.get("previewId").and_then(|x| x.as_str()) {
+        s.preview_id = p.to_string();
+    }
+    if let Some(t) = body.get("tbar").and_then(|x| x.as_f64()) {
+        s.tbar = t.clamp(0.0, 1.0);
+    }
+    s.revision = s.revision.saturating_add(1);
+    let payload = switcher_payload(&s);
+    drop(s);
+    let _ = switcher_tx.send(payload);
+}
 
-        if sources.is_empty() && state.dev_mode {
-            let simulated = ["Cam 1", "Cam 3"];
-            if let Some(choice) = simulated.choose(&mut rand::thread_rng()) {
-                sources.push((*choice).to_string());
+async fn ws_handler(ws: WebSocketUpgrade, State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| handle_socket(socket, state))
+}
+
+async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
+    let mut rx = state.switcher_tx.subscribe();
+    let (mut sender, mut receiver) = socket.split();
+
+    {
+        let snap = state.switcher.lock().expect("switcher lock").clone();
+        if sender
+            .send(Message::Text(switcher_payload(&snap)))
+            .await
+            .is_err()
+        {
+            return;
+        }
+    }
+
+    let mut ndi_tick = tokio::time::interval(Duration::from_secs(5));
+    ndi_tick.tick().await;
+
+    loop {
+        tokio::select! {
+            _ = ndi_tick.tick() => {
+                let mut sources: Vec<String> = discover_cameras(state.latency_buffer)
+                    .into_iter()
+                    .map(|cam| cam.source_name)
+                    .collect();
+
+                if sources.is_empty() && state.dev_mode {
+                    let simulated = ["Cam 1", "Cam 3"];
+                    if let Some(choice) = simulated.choose(&mut rand::thread_rng()) {
+                        sources.push((*choice).to_string());
+                    }
+                }
+
+                let payload = json!({ "type": "ndi", "sources": sources }).to_string();
+                if sender.send(Message::Text(payload)).await.is_err() {
+                    break;
+                }
+            }
+            incoming = receiver.next() => {
+                match incoming {
+                    Some(Ok(Message::Text(text))) => {
+                        if let Ok(v) = serde_json::from_str::<Value>(&text) {
+                            if v.get("type").and_then(|t| t.as_str()) == Some("switcher") {
+                                apply_switcher_message(&state.switcher, &v, &state.switcher_tx);
+                            }
+                        }
+                    }
+                    Some(Ok(Message::Close(_))) | None => break,
+                    Some(Ok(_)) => {}
+                    Some(Err(_)) => break,
+                }
+            }
+            recv = rx.recv() => {
+                match recv {
+                    Ok(msg) => {
+                        if sender.send(Message::Text(msg)).await.is_err() {
+                            break;
+                        }
+                    }
+                    Err(broadcast::error::RecvError::Lagged(_)) => continue,
+                    Err(broadcast::error::RecvError::Closed) => break,
+                }
             }
         }
-
-        let payload = json!({ "sources": sources }).to_string();
-        if socket.send(Message::Text(payload)).await.is_err() {
-            break;
-        }
-
-        sleep(Duration::from_secs(5)).await;
     }
 }
 
@@ -126,9 +210,20 @@ async fn main() {
         .map(|value| matches!(value.to_lowercase().as_str(), "1" | "true" | "yes" | "on"))
         .unwrap_or(false);
 
+    let initial_switcher = SwitcherState {
+        program_id: "cam2".to_string(),
+        preview_id: "cam1".to_string(),
+        tbar: 0.0,
+        revision: 0,
+    };
+
+    let (switcher_tx, _rx) = broadcast::channel::<String>(512);
+
     let state = Arc::new(AppState {
         dev_mode,
         latency_buffer: 2,
+        switcher: Arc::new(Mutex::new(initial_switcher)),
+        switcher_tx,
     });
 
     let app = Router::new()
@@ -138,7 +233,7 @@ async fn main() {
     let bind_addr: SocketAddr = "0.0.0.0:9000".parse().expect("valid bind address");
     println!(
         "Vision WebSocket server listening on ws://{}/ws (DEV_MODE={})",
-        bind_addr, state.dev_mode
+        bind_addr, dev_mode
     );
 
     let listener = tokio::net::TcpListener::bind(bind_addr)

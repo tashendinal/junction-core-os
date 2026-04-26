@@ -1,0 +1,8 @@
+[Match]
+Name=bond0
+
+[Network]
+# Configure the bond master with Layer-3 settings.
+# Replace DHCP with static Address/Gateway/DNS if needed in production.
+DHCP=yes
+IPv6AcceptRA=yes

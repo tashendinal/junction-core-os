@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   vision-engine:
     build:
@@ -9,13 +7,15 @@ services:
     restart: unless-stopped
 
   archive-node:
-    image: junction/archive-node:latest
+    build:
+      context: ./services/archive-node
     container_name: archive-node
     network_mode: host
     restart: unless-stopped
 
   command-center:
-    image: junction/command-center:latest
+    build:
+      context: ./services/command-center
     container_name: command-center
     network_mode: host
     restart: unless-stopped
