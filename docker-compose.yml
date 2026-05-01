@@ -1,0 +1,21 @@
+services:
+  vision-engine:
+    build:
+      context: ./services/vision
+    container_name: vision-engine
+    network_mode: host
+    restart: unless-stopped
+
+  archive-node:
+    build:
+      context: ./services/archive-node
+    container_name: archive-node
+    network_mode: host
+    restart: unless-stopped
+
+  command-center:
+    build:
+      context: ./services/command-center
+    container_name: command-center
+    network_mode: host
+    restart: unless-stopped

@@ -1,0 +1,7 @@
+[Match]
+# Match both 5GbE physical ports intended for LACP.
+Name=enp2s0 enp3s0
+
+[Network]
+# Attach both links to the bond master interface.
+Bond=bond0

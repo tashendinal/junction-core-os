@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package junction;
+
+service SwitcherControl {
+  rpc SwitchSource(SwitchSourceRequest) returns (SwitchSourceResponse);
+  rpc GetTelemetry(GetTelemetryRequest) returns (TelemetryResponse);
+}
+
+message SwitchSourceRequest {
+  string source_id = 1;
+}
+
+message SwitchSourceResponse {
+  bool success = 1;
+  string active_source_id = 2;
+}
+
+message GetTelemetryRequest {}
+
+message TelemetryResponse {
+  double cpu_percent = 1;
+  double temperature_celsius = 2;
+}
+
+// Cluster layout is persisted by command-center to /os-core/cluster.json on the host.
+service ClusterControl {
+  rpc UpdateClusterLayout(UpdateClusterLayoutRequest) returns (UpdateClusterLayoutResponse);
+}
+
+message RackSlotAssignment {
+  int32 u_position = 1;
+  string node_label = 2;
+  string hw_id = 3;
+  string ip_address = 4;
+  string functional_role = 5;
+}
+
+message UpdateClusterLayoutRequest {
+  repeated RackSlotAssignment slots = 1;
+}
+
+message UpdateClusterLayoutResponse {
+  bool success = 1;
+  string cluster_json_path = 2;
+  string message = 3;
+}
