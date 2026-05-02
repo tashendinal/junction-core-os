@@ -1,0 +1,52 @@
+{
+  "updatedAt": "2026-05-02T00:00:00.000Z",
+  "targetModuleId": "gfx-opi-1",
+  "notes": "Preview = next look. Program = on air. Poll GET /api/graphics-show — includes media URLs + asset ids.",
+  "scenePresets": [
+    { "id": "default", "label": "Clean" },
+    { "id": "match", "label": "Match" },
+    { "id": "interview", "label": "Interview" }
+  ],
+  "preview": {
+    "sceneId": "default",
+    "primaryLine": "",
+    "secondaryLine": "",
+    "crawl": "",
+    "bug": "",
+    "layers": {
+      "lowerThird": false,
+      "crawl": false,
+      "logo": false,
+      "fullscreen": false
+    },
+    "media": {
+      "backgroundAssetId": null,
+      "overlayAssetId": null,
+      "logoAssetId": null,
+      "backgroundUrl": "",
+      "overlayUrl": "",
+      "logoUrl": ""
+    }
+  },
+  "program": {
+    "sceneId": "default",
+    "primaryLine": "",
+    "secondaryLine": "",
+    "crawl": "",
+    "bug": "",
+    "layers": {
+      "lowerThird": false,
+      "crawl": false,
+      "logo": false,
+      "fullscreen": false
+    },
+    "media": {
+      "backgroundAssetId": null,
+      "overlayAssetId": null,
+      "logoAssetId": null,
+      "backgroundUrl": "",
+      "overlayUrl": "",
+      "logoUrl": ""
+    }
+  }
+}

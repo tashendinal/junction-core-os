@@ -1,0 +1,8 @@
+[Unit]
+Description=Watch cluster.json and reconcile Docker role immediately
+
+[Path]
+PathChanged=/etc/junction/cluster.json
+
+[Install]
+WantedBy=multi-user.target

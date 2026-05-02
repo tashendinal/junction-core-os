@@ -1,0 +1,179 @@
+{
+  "updatedAt": "2026-05-02T02:51:51.630Z",
+  "events": [
+    {
+      "at": "2026-05-02T02:51:51.630Z",
+      "type": "auth.login",
+      "detail": {
+        "username": "admin",
+        "role": "system_admin",
+        "ip": "::1",
+        "remoteAccessMode": "lan_only"
+      }
+    },
+    {
+      "at": "2026-05-02T02:41:11.783Z",
+      "type": "graphics-show.take",
+      "detail": {
+        "sceneId": "default"
+      }
+    },
+    {
+      "at": "2026-05-02T02:41:11.434Z",
+      "type": "graphics-show.take",
+      "detail": {
+        "sceneId": "default"
+      }
+    },
+    {
+      "at": "2026-05-02T02:41:10.844Z",
+      "type": "graphics-show.take",
+      "detail": {
+        "sceneId": "default"
+      }
+    },
+    {
+      "at": "2026-05-02T02:41:10.501Z",
+      "type": "graphics-show.cut",
+      "detail": {
+        "sceneId": "default"
+      }
+    },
+    {
+      "at": "2026-05-02T02:41:09.481Z",
+      "type": "graphics-show.clear_preview",
+      "detail": {}
+    },
+    {
+      "at": "2026-05-02T02:41:08.724Z",
+      "type": "graphics-show.clear_program",
+      "detail": {}
+    },
+    {
+      "at": "2026-05-02T02:41:07.756Z",
+      "type": "graphics-show.copy_program_to_preview",
+      "detail": {}
+    },
+    {
+      "at": "2026-05-02T02:41:06.995Z",
+      "type": "graphics-show.copy_program_to_preview",
+      "detail": {}
+    },
+    {
+      "at": "2026-05-02T02:38:13.426Z",
+      "type": "graphics-show.copy_program_to_preview",
+      "detail": {}
+    },
+    {
+      "at": "2026-05-02T02:38:12.434Z",
+      "type": "graphics-show.clear_preview",
+      "detail": {}
+    },
+    {
+      "at": "2026-05-01T19:20:58.578Z",
+      "type": "auth.login",
+      "detail": {
+        "username": "admin",
+        "role": "system_admin",
+        "ip": "unknown",
+        "remoteAccessMode": "lan_only"
+      }
+    },
+    {
+      "at": "2026-05-01T19:09:10.271Z",
+      "type": "auth.login",
+      "detail": {
+        "username": "admin",
+        "role": "system_admin",
+        "ip": "::1",
+        "remoteAccessMode": "lan_only"
+      }
+    },
+    {
+      "at": "2026-05-01T19:05:59.236Z",
+      "type": "auth.login",
+      "detail": {
+        "username": "admin",
+        "role": "system_admin",
+        "ip": "::1",
+        "remoteAccessMode": "lan_only"
+      }
+    },
+    {
+      "at": "2026-05-01T01:32:02.577Z",
+      "type": "auth.login",
+      "detail": {
+        "username": "admin",
+        "role": "system_admin",
+        "ip": "::1",
+        "remoteAccessMode": "lan_only"
+      }
+    },
+    {
+      "at": "2026-05-01T01:30:55.492Z",
+      "type": "auth.login",
+      "detail": {
+        "username": "admin",
+        "role": "system_admin",
+        "ip": "::1",
+        "remoteAccessMode": "lan_only"
+      }
+    },
+    {
+      "at": "2026-04-30T07:54:45.773Z",
+      "type": "auth.login",
+      "detail": {
+        "username": "admin",
+        "role": "system_admin",
+        "ip": "::1",
+        "remoteAccessMode": "lan_only"
+      }
+    },
+    {
+      "at": "2026-04-30T07:50:19.605Z",
+      "type": "auth.login",
+      "detail": {
+        "username": "admin",
+        "role": "system_admin",
+        "ip": "::1",
+        "remoteAccessMode": "lan_only"
+      }
+    },
+    {
+      "at": "2026-04-30T06:28:48.678Z",
+      "type": "auth.login",
+      "detail": {
+        "username": "admin",
+        "role": "system_admin",
+        "ip": "::1",
+        "remoteAccessMode": "lan_only"
+      }
+    },
+    {
+      "at": "2026-04-30T06:20:55.078Z",
+      "type": "auth.login",
+      "detail": {
+        "username": "admin",
+        "role": "system_admin",
+        "ip": "::1",
+        "remoteAccessMode": "lan_only"
+      }
+    },
+    {
+      "at": "2026-04-30T04:55:13.130Z",
+      "type": "on-air.mode",
+      "detail": {
+        "user": "admin",
+        "mode": "preflight"
+      }
+    },
+    {
+      "at": "2026-04-30T04:55:10.265Z",
+      "type": "on-air.mode",
+      "detail": {
+        "user": "admin",
+        "mode": "rehearsal"
+      }
+    }
+  ]
+}

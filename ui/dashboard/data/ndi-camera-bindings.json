@@ -1,0 +1,29 @@
+{
+  "updatedAt": "2026-05-02T00:00:00.000Z",
+  "bindings": [
+    {
+      "feedId": "cam1",
+      "label": "CAM 1",
+      "ndiSourceName": "",
+      "controlHost": "",
+      "vendor": "sony",
+      "notes": "Pair NDI name with camera IP on your direct Ethernet link; Apply loads IP into the control deck."
+    },
+    {
+      "feedId": "cam2",
+      "label": "CAM 2",
+      "ndiSourceName": "",
+      "controlHost": "",
+      "vendor": "sony",
+      "notes": ""
+    },
+    {
+      "feedId": "cam3",
+      "label": "CAM 3",
+      "ndiSourceName": "",
+      "controlHost": "",
+      "vendor": "sony",
+      "notes": ""
+    }
+  ]
+}

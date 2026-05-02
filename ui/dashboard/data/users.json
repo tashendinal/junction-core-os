@@ -1,0 +1,32 @@
+{
+  "updatedAt": "2026-04-30T05:49:41.331Z",
+  "users": [
+    {
+      "username": "admin",
+      "displayName": "System Admin",
+      "role": "system_admin",
+      "passwordHash": "5c06eb3d5a05a19f49476d694ca81a36344660e9d5b98e3d6a6630f31c2422e7",
+      "active": true,
+      "createdAt": "2026-04-29T15:08:31.582Z",
+      "updatedAt": "2026-04-29T15:08:31.582Z"
+    },
+    {
+      "username": "prod",
+      "displayName": "Live Production",
+      "role": "live_production",
+      "passwordHash": "799b45e7ab853160cd174cb4345f141808c5a4acac100d472c49538672f97bb6",
+      "active": true,
+      "createdAt": "2026-04-29T15:08:31.582Z",
+      "updatedAt": "2026-04-29T15:08:31.582Z"
+    },
+    {
+      "username": "viewer",
+      "displayName": "Read Only Viewer",
+      "role": "viewer",
+      "passwordHash": "4f1a37ee26ed45dfdb43250b09e0f68c915d34518df25087e99c650af49c5546",
+      "active": false,
+      "createdAt": "2026-04-29T15:08:31.582Z",
+      "updatedAt": "2026-04-30T05:49:41.331Z"
+    }
+  ]
+}

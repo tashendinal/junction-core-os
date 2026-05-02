@@ -1,0 +1,120 @@
+{
+  "updatedAt": "2026-04-30T00:00:00.000Z",
+  "version": 1,
+  "items": [
+    {
+      "id": "pwr-ups",
+      "category": "Power & site",
+      "label": "Power: UPS / generator / mains verified; no loose IEC",
+      "requiredForLive": true
+    },
+    {
+      "id": "net-path",
+      "category": "Network",
+      "label": "Network: 10G / bond / VLAN matches show diagram; spare SFP+",
+      "requiredForLive": true
+    },
+    {
+      "id": "vision-reach",
+      "category": "Vision",
+      "label": "Vision HTTP /health OK (Server control or Readiness)",
+      "requiredForLive": true
+    },
+    {
+      "id": "ndi-sources",
+      "category": "Vision",
+      "label": "NDI: expected sources visible on switcher; aliases if needed",
+      "requiredForLive": true
+    },
+    {
+      "id": "time-sync",
+      "category": "Sync",
+      "label": "Time: PTP / timecode plan confirmed with facility or grandmaster",
+      "requiredForLive": true
+    },
+    {
+      "id": "storage",
+      "category": "Archive",
+      "label": "Storage: record path free space; NVMe / RAID health",
+      "requiredForLive": true
+    },
+    {
+      "id": "iso-agents",
+      "category": "Archive",
+      "label": "ISO recorder agents: GET /health OK on primary (and backup) bases in recording rack",
+      "requiredForLive": true
+    },
+    {
+      "id": "standby-drill",
+      "category": "Recovery",
+      "label": "Warm standby: dashboard URL in server config; promotion / carbon-copy procedure understood",
+      "requiredForLive": false
+    },
+    {
+      "id": "gpu-modules",
+      "category": "Media",
+      "label": "If GPU media mode enabled: gpu-modules page shows required cards online (primary + backup as planned)",
+      "requiredForLive": false
+    },
+    {
+      "id": "overlay-modules",
+      "category": "Graphics",
+      "label": "If graphics module is used: overlay-modules page reports engine online and output profile validated",
+      "requiredForLive": false
+    },
+    {
+      "id": "remote-access",
+      "category": "Security",
+      "label": "Remote operator policy reviewed (CIDR + remote access code) for offsite control users",
+      "requiredForLive": true
+    },
+    {
+      "id": "thermals",
+      "category": "Hardware",
+      "label": "Thermals: node telemetry fresh; no critical temps in NOC",
+      "requiredForLive": true
+    },
+    {
+      "id": "agents",
+      "category": "Fleet",
+      "label": "Agents: metrics posting; command policy known (exec on/off)",
+      "requiredForLive": true
+    },
+    {
+      "id": "wan-lb",
+      "category": "Contribution",
+      "label": "WAN / link balancer: profile matches show (if used)",
+      "requiredForLive": false
+    },
+    {
+      "id": "cam-ctl",
+      "category": "Cameras",
+      "label": "Camera control: VISCA/CCAPI path tested for this show",
+      "requiredForLive": false
+    },
+    {
+      "id": "backup-export",
+      "category": "Recovery",
+      "label": "Config backup taken (Dashboard backup) after final tweaks",
+      "requiredForLive": true
+    },
+    {
+      "id": "rollback",
+      "category": "Recovery",
+      "label": "Rollback: spare node / image / bypass path agreed with lead",
+      "requiredForLive": true
+    },
+    {
+      "id": "comms",
+      "category": "Crew",
+      "label": "Comms: talkback / IFB routing checked with audio lead",
+      "requiredForLive": false
+    },
+    {
+      "id": "readiness-gate",
+      "category": "Gates",
+      "label": "Readiness page: no FAIL on mandatory checks (or waivers documented)",
+      "requiredForLive": true
+    }
+  ]
+}

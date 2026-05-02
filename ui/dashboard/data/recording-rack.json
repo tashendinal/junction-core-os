@@ -1,0 +1,75 @@
+{
+  "updatedAt": "2026-04-30T00:00:00.000Z",
+  "modules": [
+    {
+      "id": "deck-a",
+      "kind": "playback_deck",
+      "label": "Deck A — HyperDeck-class (playback)",
+      "rackU": 20,
+      "heightU": 1,
+      "primaryNodeId": "n05",
+      "backupNodeId": "n01",
+      "primaryRecorderBase": null,
+      "backupRecorderBase": null,
+      "outputDir": "/mnt/nvme0/decks/deck-a",
+      "inputNotes": "Mount SSD sled; ProRes/DNxHR workflow via Resolve or ffmpeg ingest (add agent URL when wired).",
+      "enabled": true
+    },
+    {
+      "id": "deck-b",
+      "kind": "playback_deck",
+      "label": "Deck B — backup playback",
+      "rackU": 19,
+      "heightU": 1,
+      "primaryNodeId": "n01",
+      "backupNodeId": null,
+      "primaryRecorderBase": null,
+      "backupRecorderBase": null,
+      "outputDir": "/mnt/nvme0/decks/deck-b",
+      "inputNotes": "Optional cold spare deck slot.",
+      "enabled": true
+    },
+    {
+      "id": "iso-cam1",
+      "kind": "iso_recorder",
+      "label": "ISO — CAM 1",
+      "rackU": 8,
+      "heightU": 2,
+      "primaryNodeId": "n05",
+      "backupNodeId": "n02",
+      "primaryRecorderBase": "http://127.0.0.1:9011",
+      "backupRecorderBase": "http://127.0.0.1:9011",
+      "outputDir": "/var/junction/recordings/iso/cam1",
+      "inputNotes": "Point ffmpeg/NDI bridge here; demo uses lavfi testsrc on iso-recorder.",
+      "enabled": true
+    },
+    {
+      "id": "iso-cam2",
+      "kind": "iso_recorder",
+      "label": "ISO — CAM 2",
+      "rackU": 6,
+      "heightU": 2,
+      "primaryNodeId": "n05",
+      "backupNodeId": "n02",
+      "primaryRecorderBase": "http://127.0.0.1:9011",
+      "backupRecorderBase": "http://127.0.0.1:9011",
+      "outputDir": "/var/junction/recordings/iso/cam2",
+      "inputNotes": "Twin path: backup node records in parallel for broadcast redundancy.",
+      "enabled": true
+    },
+    {
+      "id": "iso-cam3",
+      "kind": "iso_recorder",
+      "label": "ISO — CAM 3",
+      "rackU": 4,
+      "heightU": 2,
+      "primaryNodeId": "n02",
+      "backupNodeId": "n05",
+      "primaryRecorderBase": "http://127.0.0.1:9011",
+      "backupRecorderBase": "http://127.0.0.1:9011",
+      "outputDir": "/var/junction/recordings/iso/cam3",
+      "inputNotes": "",
+      "enabled": true
+    }
+  ]
+}

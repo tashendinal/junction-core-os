@@ -1,0 +1,21 @@
+{
+  "updatedAt": "2026-04-30T00:00:00.000Z",
+  "modules": [
+    {
+      "id": "gfx-opi-1",
+      "nodeId": "n08",
+      "label": "Orange Pi Overlay Engine A",
+      "engine": "obs_gfx",
+      "output": "program_fill_key",
+      "sceneProfile": "match-lower-third-v1",
+      "enabled": true,
+      "state": "online",
+      "lastHeartbeatAt": "2026-04-30T00:00:00.000Z",
+      "notes": "Primary graphics and overlay module near vision plane."
+    }
+  ],
+  "policy": {
+    "mode": "orange_pi_overlay_module",
+    "syncFromRealtimeEvents": true
+  }
+}

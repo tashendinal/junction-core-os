@@ -1,0 +1,10 @@
+[Unit]
+Description=Reapply Junction node role and Docker stack from cluster.json
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment=JUNCTION_REPO=/opt/junction-core-os
+Environment=JUNCTION_STATE_DIR=/etc/junction
+ExecStart=/opt/junction-core-os/os-core/scripts/junction-reconcile-role.sh

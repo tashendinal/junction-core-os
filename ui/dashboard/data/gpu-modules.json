@@ -1,0 +1,30 @@
+{
+  "updatedAt": "2026-04-30T00:00:00.000Z",
+  "modules": [
+    {
+      "id": "gpu-n07-1",
+      "nodeId": "n07",
+      "vendor": "nvidia",
+      "model": "NVIDIA L4",
+      "cardClass": "datacenter",
+      "vramGb": 24,
+      "pcieSlot": "slot-1",
+      "driverVersion": "550.x",
+      "cudaVersion": "12.4",
+      "powerLimitW": 72,
+      "enabled": true,
+      "state": "online",
+      "workflows": ["ndi_ingest_decode", "iso_encode", "contribution_encode", "ai_qc"],
+      "discoveredAt": "2026-04-30T00:00:00.000Z",
+      "lastSeenAt": "2026-04-30T00:00:00.000Z",
+      "notes": "Primary GPU media node. Orange Pi nodes keep control/routing logic."
+    }
+  ],
+  "workflowPolicy": {
+    "mode": "orange_pi_control_gpu_media",
+    "orangePiControlNodeIds": ["n02", "n05"],
+    "mediaNodeIds": ["n07"],
+    "defaultCodecProfile": "broadcast_quality",
+    "autoEnrollFromTelemetry": true
+  }
+}

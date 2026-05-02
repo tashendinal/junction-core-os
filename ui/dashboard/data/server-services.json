@@ -1,0 +1,32 @@
+{
+  "updatedAt": "2026-04-30T00:00:00.000Z",
+  "services": [
+    {
+      "id": "vision",
+      "label": "Vision / NDI discovery",
+      "kind": "http",
+      "probeUrl": null,
+      "orchestrateAction": "restart_vision",
+      "defaultNodeId": "n02",
+      "lastProbe": null
+    },
+    {
+      "id": "dashboard",
+      "label": "Control dashboard (this UI)",
+      "kind": "http",
+      "probeUrl": null,
+      "orchestrateAction": null,
+      "defaultNodeId": null,
+      "lastProbe": null
+    },
+    {
+      "id": "output-router",
+      "label": "NDI output router (PGM / MV publish)",
+      "kind": "http",
+      "probeUrl": "http://127.0.0.1:9020/health",
+      "orchestrateAction": null,
+      "defaultNodeId": null,
+      "lastProbe": null
+    }
+  ]
+}

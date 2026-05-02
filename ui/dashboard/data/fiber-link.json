@@ -1,0 +1,11 @@
+{
+  "provider": "SLT Fiber",
+  "pathLabel": "Kandy OB Bus -> Colombo Control",
+  "remoteSite": "Kandy",
+  "localSite": "Colombo",
+  "primaryIp": "10.20.0.1",
+  "backupIp": "10.20.0.2",
+  "vlanId": 200,
+  "mtu": 1500,
+  "encryption": true
+}
