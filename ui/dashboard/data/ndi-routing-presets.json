@@ -1,0 +1,26 @@
+{
+  "updatedAt": "2026-04-30T00:00:00.000Z",
+  "presets": [
+    {
+      "id": "default-3cam",
+      "label": "3-Cam (PGM cam2)",
+      "programId": "cam2",
+      "previewId": "cam1",
+      "tbar": 0
+    },
+    {
+      "id": "interview-cam1-pgm",
+      "label": "Interview — CAM1 program",
+      "programId": "cam1",
+      "previewId": "cam2",
+      "tbar": 0
+    },
+    {
+      "id": "wide-pgm-cam3",
+      "label": "Wide — CAM3 program",
+      "programId": "cam3",
+      "previewId": "cam1",
+      "tbar": 0
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "policyMode": "priority_failover",
+  "targetLatencyMs": 60,
+  "maxPacketLossPct": 2,
+  "streamGuard": true,
+  "providers": [
+    {
+      "id": "starlink",
+      "label": "Starlink",
+      "enabled": true,
+      "priority": 2,
+      "weight": 25,
+      "maxMbps": 160,
+      "inputType": "satellite",
+      "interfaceName": "eth1",
+      "gatewayIp": "192.168.100.1",
+      "dnsPrimary": "8.8.8.8",
+      "dnsSecondary": "1.1.1.1"
+    },
+    {
+      "id": "slt_fiber",
+      "label": "SLT Fiber",
+      "enabled": true,
+      "priority": 1,
+      "weight": 45,
+      "maxMbps": 300,
+      "inputType": "fiber",
+      "interfaceName": "eth0.200",
+      "gatewayIp": "10.20.0.1",
+      "dnsPrimary": "8.8.8.8",
+      "dnsSecondary": "1.1.1.1"
+    },
+    {
+      "id": "mobitel_4g",
+      "label": "Mobitel 4G",
+      "enabled": true,
+      "priority": 3,
+      "weight": 15,
+      "maxMbps": 70,
+      "inputType": "lte",
+      "interfaceName": "wwan0",
+      "gatewayIp": "100.72.0.1",
+      "dnsPrimary": "8.8.4.4",
+      "dnsSecondary": "1.0.0.1",
+      "apn": "mobitel"
+    },
+    {
+      "id": "dialog_4g",
+      "label": "Dialog 4G",
+      "enabled": true,
+      "priority": 4,
+      "weight": 15,
+      "maxMbps": 65,
+      "inputType": "lte",
+      "interfaceName": "wwan1",
+      "gatewayIp": "100.73.0.1",
+      "dnsPrimary": "9.9.9.9",
+      "dnsSecondary": "149.112.112.112",
+      "apn": "dialogbb"
+    }
+  ]
+}

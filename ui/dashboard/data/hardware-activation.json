@@ -1,0 +1,9 @@
+{
+  "activated": true,
+  "activatedAt": "2026-04-29T15:00:12.269Z",
+  "activatedBy": "admin",
+  "hardwareId": "junction-core-main",
+  "activationCodeHash": "7ba9e03bed4b7a1d7b95f21c0776fcd2a861f9d4349edbea1daf6c8e8706dbc6",
+  "reconfigTokenHash": null,
+  "reconfigEnabledAt": null
+}

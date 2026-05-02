@@ -50,6 +50,6 @@ RUN ldconfig || true
 
 COPY --from=builder /app/target/release/vision /usr/local/bin/vision
 
-EXPOSE 9000
+EXPOSE 9000/tcp 47779/udp
 
 CMD ["vision"]

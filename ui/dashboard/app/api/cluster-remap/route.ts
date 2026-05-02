@@ -2,6 +2,8 @@ import { promises as fs } from "fs";
 import path from "path";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { writeAuditLog } from "../../../lib/audit";
+import { SESSION_COOKIE, hasPermission, parseSessionToken } from "../../../lib/security";
 
 export const runtime = "nodejs";
 
@@ -80,6 +82,12 @@ async function tryGrpcUpdate(slots: RackSlot[]): Promise<{ ok: boolean; message:
 }
 
 export async function POST(req: NextRequest) {
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  const user = parseSessionToken(token);
+  if (!hasPermission(user, "rack.configure")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   let body: Body;
   try {
     body = (await req.json()) as Body;
@@ -102,6 +110,11 @@ export async function POST(req: NextRequest) {
   await fs.writeFile(filePath, `${JSON.stringify(doc, null, 2)}\n`, "utf8");
 
   const grpcResult = await tryGrpcUpdate(body.slots);
+  await writeAuditLog(user, {
+    action: "cluster.remap.push",
+    target: "cluster.json",
+    details: { slotCount: body.slots.length, grpc: grpcResult },
+  });
 
   return NextResponse.json({
     success: true,

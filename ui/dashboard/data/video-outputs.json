@@ -1,0 +1,40 @@
+{
+  "updatedAt": "2026-05-02T00:00:00.000Z",
+  "multiviewLayouts": [
+    {
+      "id": "layout-main",
+      "label": "Main wall (3-box)",
+      "tiles": [
+        { "slot": 0, "feedId": "cam1", "label": "CAM 1" },
+        { "slot": 1, "feedId": "cam2", "label": "CAM 2" },
+        { "slot": 2, "feedId": "cam3", "label": "CAM 3" }
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "id": "out-a",
+      "label": "Dedicated program",
+      "ndiStreamName": "JUNCTION-PGM",
+      "enabled": true,
+      "assignment": { "kind": "program_bus" },
+      "notes": "NDI Video Monitor: connect to this name once the output-router publishes PGM."
+    },
+    {
+      "id": "out-b",
+      "label": "Dedicated multiview",
+      "ndiStreamName": "JUNCTION-MV",
+      "enabled": true,
+      "assignment": { "kind": "multiview_layout", "layoutId": "layout-main" },
+      "notes": "Multiview layout → publish to this NDI name for the main display."
+    },
+    {
+      "id": "out-c",
+      "label": "Flexible / CAM / custom NDI",
+      "ndiStreamName": "JUNCTION-AUX",
+      "enabled": true,
+      "assignment": { "kind": "feed", "feedId": "cam2" },
+      "notes": "Switch assignment to ndi_custom and type an on-net NDI source name."
+    }
+  ]
+}

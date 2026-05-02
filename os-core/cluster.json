@@ -1,41 +1,41 @@
 {
   "version": 1,
-  "updated_at": "2026-04-26T07:16:05.201Z",
+  "updated_at": "2026-05-01T01:33:00.226Z",
   "slots": [
     {
-      "u_position": 12,
-      "node_label": "Node 07",
-      "hw_id": "HW-OPi6U-9D44",
-      "ip_address": "10.0.0.17",
-      "functional_role": "AI Matcher"
-    },
-    {
-      "u_position": 4,
+      "u_position": 5,
       "node_label": "Node 09",
       "hw_id": "HW-OPi6U-DEAD",
       "ip_address": "—",
       "functional_role": "Failed"
     },
     {
+      "u_position": 4,
+      "node_label": "Node 07",
+      "hw_id": "HW-OPi6U-9D44",
+      "ip_address": "10.0.0.17",
+      "functional_role": "AI Matcher"
+    },
+    {
       "u_position": 3,
+      "node_label": "Node 01",
+      "hw_id": "HW-OPi6U-1A00",
+      "ip_address": "10.0.0.11",
+      "functional_role": "Standby"
+    },
+    {
+      "u_position": 2,
       "node_label": "Node 02",
       "hw_id": "HW-OPi6U-3C91",
       "ip_address": "10.0.0.12",
       "functional_role": "Vision Edge"
     },
     {
-      "u_position": 2,
+      "u_position": 1,
       "node_label": "Node 05",
       "hw_id": "HW-OPi6U-7F2A",
       "ip_address": "10.0.0.15",
       "functional_role": "Primary Archive"
-    },
-    {
-      "u_position": 1,
-      "node_label": "Node 01",
-      "hw_id": "HW-OPi6U-1A00",
-      "ip_address": "10.0.0.11",
-      "functional_role": "Standby"
     }
   ]
 }

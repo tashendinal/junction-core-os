@@ -1,10 +1,10 @@
 "use client";
 
+import { TopNav } from "../components/TopNav";
 import React, { useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { getOperatorProfile, type OperatorProfile } from "../../lib/controlApi";
 
 type ChannelId = "cam1" | "cam2" | "cam3";
-
 const CHANNELS: { id: ChannelId; label: string }[] = [
   { id: "cam1", label: "CAM 1" },
   { id: "cam2", label: "CAM 2" },
@@ -12,8 +12,6 @@ const CHANNELS: { id: ChannelId; label: string }[] = [
 ];
 
 export default function TalkbackAudioHubPage() {
-  const router = useRouter();
-  const pathname = usePathname();
   const [talkbackMatrix, setTalkbackMatrix] = useState<Record<ChannelId, boolean>>({
     cam1: false,
     cam2: false,
@@ -26,6 +24,26 @@ export default function TalkbackAudioHubPage() {
   const [ndiInput3, setNdiInput3] = useState(71);
   const [talkbackVolume, setTalkbackVolume] = useState(58);
   const [masterProgramOut, setMasterProgramOut] = useState(76);
+  const [profile, setProfile] = useState<OperatorProfile>({
+    operatorProfileMode: "multi_vendor_software_defined",
+    singleVendorProfile: null,
+  });
+
+  React.useEffect(() => {
+    let mounted = true;
+    void getOperatorProfile()
+      .then((data) => {
+        if (!mounted) return;
+        setProfile({
+          operatorProfileMode: data.operatorProfileMode ?? "multi_vendor_software_defined",
+          singleVendorProfile: data.singleVendorProfile ?? null,
+        });
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const micActive = useMemo(
     () => ({
@@ -38,41 +56,17 @@ export default function TalkbackAudioHubPage() {
 
   return (
     <main className="tactical-root">
-      <nav className="top-nav tactile-node">
-        <div className="nav-logo-slot" aria-label="Junction Core logo slot">
-          <span>JUNCTION CORE</span>
-        </div>
-        <div className="top-nav-tabs top-nav-tabs-four">
-          <button
-            className={`top-tab ${pathname === "/" ? "active" : ""}`}
-            onClick={() => router.push("/")}
-          >
-            [SWITCHER]
-          </button>
-          <button
-            className={`top-tab ${pathname === "/talkback" ? "active" : ""}`}
-            onClick={() => router.push("/talkback")}
-          >
-            [COMMS]
-          </button>
-          <button
-            className={`top-tab ${pathname === "/system-health" ? "active" : ""}`}
-            onClick={() => router.push("/system-health")}
-          >
-            [STORAGE/STREAM]
-          </button>
-          <button
-            className={`top-tab ${pathname === "/server-rack" ? "active" : ""}`}
-            onClick={() => router.push("/server-rack")}
-          >
-            [RACK]
-          </button>
-        </div>
-      </nav>
+      <TopNav />
       <section className="tactile-node hub-shell">
         <header className="hub-header">
           <h1 className="pane-title">Talkback & Audio Hub</h1>
           <p className="technical-label">WiTalk-linked tactical communication matrix</p>
+          <p className="technical-label">
+            Profile:{" "}
+            {profile.operatorProfileMode === "single_vendor_operator"
+              ? `single-vendor (${profile.singleVendorProfile || "custom"})`
+              : "multi-vendor software-defined"}
+          </p>
         </header>
 
         <section className="hub-grid">

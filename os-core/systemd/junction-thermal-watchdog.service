@@ -1,0 +1,19 @@
+[Unit]
+Description=Junction thermal watchdog (GPIO rack fans + Vision UDP alerts)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=JUNCTION_TEMP_HIGH_C=75
+Environment=JUNCTION_TEMP_LOW_C=68
+Environment=JUNCTION_THERMAL_INTERVAL=2
+Environment=JUNCTION_VISION_HOST=127.0.0.1
+Environment=JUNCTION_THERMAL_ALERT_UDP_PORT=47779
+# Set on the unit drop-in: JUNCTION_FAN_GPIO=396
+ExecStart=/opt/junction-core-os/os-core/optimize.sh thermal-watchdog
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

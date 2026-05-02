@@ -1,0 +1,12 @@
+[Unit]
+Description=Periodically reconcile node role vs cluster layout
+
+[Timer]
+Unit=junction-reconcile-role.service
+OnBootSec=45
+OnUnitActiveSec=30
+AccuracySec=10
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,14 @@
+{
+  "updatedAt": "2026-05-02T00:00:00.000Z",
+  "controllers": [
+    {
+      "id": "example-gpio",
+      "label": "GPIO tally bridge (example)",
+      "enabled": false,
+      "kind": "gpio_bridge",
+      "endpoint": "http://192.168.1.50:5080",
+      "feedIds": ["cam1", "cam2", "cam3"],
+      "notes": "Replace with your on-camera or rack GPIO bridge. Poll GET /api/tally from the dashboard with session auth."
+    }
+  ]
+}

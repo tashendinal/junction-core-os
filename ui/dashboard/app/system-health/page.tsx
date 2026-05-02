@@ -1,14 +1,12 @@
 "use client";
 
+import { TopNav } from "../components/TopNav";
 import React, { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
 
 const STREAM_POINTS = 42;
 const CORE_COUNT = 8;
 
 export default function SystemHealthPage() {
-  const router = useRouter();
-  const pathname = usePathname();
   const [tbw] = useState(41.8);
   const [ssdTemp, setSsdTemp] = useState(47.2);
   const [iops, setIops] = useState(189_000);
@@ -60,37 +58,7 @@ export default function SystemHealthPage() {
 
   return (
     <main className="tactical-root">
-      <nav className="top-nav tactile-node">
-        <div className="nav-logo-slot" aria-label="Junction Core logo slot">
-          <span>JUNCTION CORE</span>
-        </div>
-        <div className="top-nav-tabs top-nav-tabs-four">
-          <button
-            className={`top-tab ${pathname === "/" ? "active" : ""}`}
-            onClick={() => router.push("/")}
-          >
-            [SWITCHER]
-          </button>
-          <button
-            className={`top-tab ${pathname === "/talkback" ? "active" : ""}`}
-            onClick={() => router.push("/talkback")}
-          >
-            [COMMS]
-          </button>
-          <button
-            className={`top-tab ${pathname === "/system-health" ? "active" : ""}`}
-            onClick={() => router.push("/system-health")}
-          >
-            [STORAGE/STREAM]
-          </button>
-          <button
-            className={`top-tab ${pathname === "/server-rack" ? "active" : ""}`}
-            onClick={() => router.push("/server-rack")}
-          >
-            [RACK]
-          </button>
-        </div>
-      </nav>
+      <TopNav />
       <section className="tactile-node diag-shell">
         <header className="diag-header">
           <h1 className="pane-title">System Health & Stream Diagnostics</h1>

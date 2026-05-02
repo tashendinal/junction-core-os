@@ -1,7 +1,7 @@
 "use client";
 
+import { TopNav } from "../components/TopNav";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
 
 const MIN_RACK_U = 1;
 const MAX_RACK_U = 52;
@@ -23,6 +23,10 @@ type RackNode = {
   tempC: number;
   syncing: boolean;
   offline: boolean;
+  powerState: "on" | "off";
+  maintenanceMode: boolean;
+  networkEnabled: boolean;
+  storageMounted: boolean;
 };
 
 type SlotState = {
@@ -41,6 +45,10 @@ const INITIAL_NODES: RackNode[] = [
     tempC: 58,
     syncing: false,
     offline: false,
+    powerState: "on",
+    maintenanceMode: false,
+    networkEnabled: true,
+    storageMounted: true,
   },
   {
     id: "n02",
@@ -52,6 +60,10 @@ const INITIAL_NODES: RackNode[] = [
     tempC: 72,
     syncing: true,
     offline: false,
+    powerState: "on",
+    maintenanceMode: false,
+    networkEnabled: true,
+    storageMounted: true,
   },
   {
     id: "n07",
@@ -63,6 +75,10 @@ const INITIAL_NODES: RackNode[] = [
     tempC: 81,
     syncing: false,
     offline: false,
+    powerState: "on",
+    maintenanceMode: false,
+    networkEnabled: true,
+    storageMounted: true,
   },
   {
     id: "n01",
@@ -74,6 +90,10 @@ const INITIAL_NODES: RackNode[] = [
     tempC: 48,
     syncing: false,
     offline: false,
+    powerState: "on",
+    maintenanceMode: false,
+    networkEnabled: true,
+    storageMounted: true,
   },
   {
     id: "n09",
@@ -85,8 +105,21 @@ const INITIAL_NODES: RackNode[] = [
     tempC: 0,
     syncing: false,
     offline: true,
+    powerState: "off",
+    maintenanceMode: false,
+    networkEnabled: false,
+    storageMounted: false,
   },
 ];
+
+type Permission =
+  | "rack.view"
+  | "rack.configure"
+  | "server.power"
+  | "server.health"
+  | "server.maintenance"
+  | "server.remote_access"
+  | "server.network_storage";
 
 function ledForPower(node: RackNode | undefined): "green" | "amber" | "red" {
   if (!node || node.offline) return "red";
@@ -115,8 +148,6 @@ function buildInitialSlots(units: number): SlotState[] {
 }
 
 export default function ServerRackPage() {
-  const router = useRouter();
-  const pathname = usePathname();
   const [rackUnits, setRackUnits] = useState(21);
   const [nodes, setNodes] = useState<RackNode[]>(() => INITIAL_NODES.map((n) => ({ ...n })));
   const nodesRef = useRef(nodes);
@@ -127,6 +158,11 @@ export default function ServerRackPage() {
   const [selectedId, setSelectedId] = useState<string | null>("n05");
   const [remapStatus, setRemapStatus] = useState<string>("");
   const [ssdReport, setSsdReport] = useState<string>("");
+  const [sessionRole, setSessionRole] = useState<string>("loading");
+  const [permissions, setPermissions] = useState<Set<Permission>>(new Set());
+  const [actionStatus, setActionStatus] = useState<string>("");
+
+  const can = useCallback((permission: Permission) => permissions.has(permission), [permissions]);
 
   useEffect(() => {
     setSlots((prev) => {
@@ -142,6 +178,24 @@ export default function ServerRackPage() {
       return next;
     });
   }, [rackUnits]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const res = await fetch("/api/auth/me");
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        user?: { role: string };
+        permissions?: Permission[];
+      };
+      if (cancelled) return;
+      setSessionRole(data.user?.role || "unknown");
+      setPermissions(new Set(data.permissions || []));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -239,6 +293,7 @@ export default function ServerRackPage() {
   }, [slots, persistSlots]);
 
   const updateNodeRole = (id: string, role: NodeRole) => {
+    if (!can("rack.configure")) return;
     setNodes((prev) =>
       prev.map((n) =>
         n.id === id
@@ -251,9 +306,11 @@ export default function ServerRackPage() {
           : n
       )
     );
+    void writeAudit("server.role.update", id, { role });
   };
 
   const runSsdScrub = (id: string) => {
+    if (!can("server.health")) return;
     const n = nodeById.get(id);
     const mock = [
       `smartctl 7.3 2022-02-28 r5338 [aarch64-linux-6.1.0] (local build)`,
@@ -267,38 +324,32 @@ export default function ServerRackPage() {
       `=== SMART overall-health self-assessment test result: PASSED ===`,
     ].join("\n");
     setSsdReport(mock);
+    void writeAudit("server.health.ssd_scrub", n?.nodeLabel || id, {});
+  };
+
+  const writeAudit = useCallback(async (action: string, target: string, details?: Record<string, unknown>) => {
+    try {
+      await fetch("/api/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, target, details: details || {} }),
+      });
+    } catch {
+      /* ignore logging failures in UI */
+    }
+  }, []);
+
+  const runNodeAction = (nodeId: string, action: string, updater: (node: RackNode) => RackNode) => {
+    const node = nodeById.get(nodeId);
+    if (!node) return;
+    setNodes((prev) => prev.map((n) => (n.id === nodeId ? updater(n) : n)));
+    setActionStatus(`${node.nodeLabel}: ${action}`);
+    void writeAudit("server.control.action", node.nodeLabel, { action, nodeId });
   };
 
   return (
     <main className="tactical-root rack-page">
-      <nav className="top-nav tactile-node">
-        <div className="nav-logo-slot" aria-label="Junction Core logo slot">
-          <span>JUNCTION CORE</span>
-        </div>
-        <div className="top-nav-tabs top-nav-tabs-four">
-          <button className={`top-tab ${pathname === "/" ? "active" : ""}`} onClick={() => router.push("/")}>
-            [SWITCHER]
-          </button>
-          <button
-            className={`top-tab ${pathname === "/talkback" ? "active" : ""}`}
-            onClick={() => router.push("/talkback")}
-          >
-            [COMMS]
-          </button>
-          <button
-            className={`top-tab ${pathname === "/system-health" ? "active" : ""}`}
-            onClick={() => router.push("/system-health")}
-          >
-            [STORAGE/STREAM]
-          </button>
-          <button
-            className={`top-tab ${pathname === "/server-rack" ? "active" : ""}`}
-            onClick={() => router.push("/server-rack")}
-          >
-            [RACK]
-          </button>
-        </div>
-      </nav>
+      <TopNav />
 
       <div className="rack-workspace">
         <header className="rack-header tactile-node">
@@ -320,8 +371,9 @@ export default function ServerRackPage() {
                   max={MAX_RACK_U}
                   step={1}
                   value={rackUnits}
-                  onChange={(e) => setRackUnits(clampRackU(Number(e.target.value)))}
+                  onChange={(e) => can("rack.configure") && setRackUnits(clampRackU(Number(e.target.value)))}
                   aria-label="Custom rack height in rack units"
+                  disabled={!can("rack.configure")}
                 />
                 <span className="rack-u-suffix">U</span>
               </div>
@@ -331,14 +383,15 @@ export default function ServerRackPage() {
                     key={u}
                     type="button"
                     className={`rack-preset-btn ${rackUnits === u ? "active" : ""}`}
-                    onClick={() => setRackUnits(u)}
+                    onClick={() => can("rack.configure") && setRackUnits(u)}
+                    disabled={!can("rack.configure")}
                   >
                     {u}U
                   </button>
                 ))}
               </div>
             </label>
-            <button type="button" className="rack-save-btn" onClick={() => void persistCluster()}>
+            <button type="button" className="rack-save-btn" onClick={() => void persistCluster()} disabled={!can("rack.configure")}>
               Push cluster.json
             </button>
           </div>
@@ -369,7 +422,7 @@ export default function ServerRackPage() {
                       key={slot.u}
                       className="rack-slot"
                       onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => onSlotDrop(e, slot.u)}
+                      onDrop={(e) => can("rack.configure") && onSlotDrop(e, slot.u)}
                       onClick={() => node && setSelectedId(node.id)}
                     >
                       <div className="rack-slot-meta">
@@ -382,7 +435,7 @@ export default function ServerRackPage() {
                       <div className="rack-slot-body">
                         {node ? (
                           <div
-                            draggable
+                            draggable={can("rack.configure")}
                             onDragStart={(e) => onDragStart(e, node.id)}
                             className={`rack-node-card ${selectedId === node.id ? "selected" : ""}`}
                             onClick={(e) => {
@@ -413,7 +466,7 @@ export default function ServerRackPage() {
               {unassignedNodes.map((n) => (
                 <div
                   key={n.id}
-                  draggable
+                  draggable={can("rack.configure")}
                   onDragStart={(e) => onDragStart(e, n.id)}
                   className={`rack-node-card pool ${selectedId === n.id ? "selected" : ""}`}
                   onClick={() => setSelectedId(n.id)}
@@ -427,6 +480,7 @@ export default function ServerRackPage() {
             </div>
 
             <h2 className="pane-title module-detail-title">Module detail</h2>
+            <p className="technical-label">Access role: {sessionRole}</p>
             {selectedNode ? (
               <div className="module-detail">
                 <div className="kv-list compact">
@@ -449,15 +503,139 @@ export default function ServerRackPage() {
                     className="rack-select"
                     value={selectedNode.role}
                     onChange={(e) => updateNodeRole(selectedNode.id, e.target.value as NodeRole)}
+                    disabled={!can("rack.configure")}
                   >
                     <option value="Vision">Vision</option>
                     <option value="Archive">Archive</option>
                     <option value="AI Matcher">AI Matcher</option>
                   </select>
                 </label>
-                <button type="button" className="rack-scrub-btn" onClick={() => runSsdScrub(selectedNode.id)}>
+                <button
+                  type="button"
+                  className="rack-scrub-btn"
+                  onClick={() => runSsdScrub(selectedNode.id)}
+                  disabled={!can("server.health")}
+                >
                   SSD scrub (smartctl -a /dev/nvme0n1)
                 </button>
+                <div className="server-controls-grid">
+                  <button
+                    type="button"
+                    className="rack-scrub-btn"
+                    disabled={!can("server.power")}
+                    onClick={() =>
+                      runNodeAction(selectedNode.id, "Power On", (n) => ({
+                        ...n,
+                        powerState: "on",
+                        offline: false,
+                      }))
+                    }
+                  >
+                    Power On
+                  </button>
+                  <button
+                    type="button"
+                    className="rack-scrub-btn"
+                    disabled={!can("server.power")}
+                    onClick={() =>
+                      runNodeAction(selectedNode.id, "Shutdown", (n) => ({
+                        ...n,
+                        powerState: "off",
+                        offline: true,
+                        syncing: false,
+                      }))
+                    }
+                  >
+                    Shutdown
+                  </button>
+                  <button
+                    type="button"
+                    className="rack-scrub-btn"
+                    disabled={!can("server.power")}
+                    onClick={() =>
+                      runNodeAction(selectedNode.id, "Reboot", (n) => ({
+                        ...n,
+                        powerState: "on",
+                        offline: false,
+                      }))
+                    }
+                  >
+                    Reboot
+                  </button>
+                  <button
+                    type="button"
+                    className="rack-scrub-btn"
+                    disabled={!can("server.health")}
+                    onClick={() => runNodeAction(selectedNode.id, "Run Diagnostics", (n) => ({ ...n }))}
+                  >
+                    Run diagnostics
+                  </button>
+                  <button
+                    type="button"
+                    className="rack-scrub-btn"
+                    disabled={!can("server.maintenance")}
+                    onClick={() =>
+                      runNodeAction(selectedNode.id, "Toggle Maintenance", (n) => ({
+                        ...n,
+                        maintenanceMode: !n.maintenanceMode,
+                      }))
+                    }
+                  >
+                    {selectedNode.maintenanceMode ? "Exit maintenance" : "Enter maintenance"}
+                  </button>
+                  <button
+                    type="button"
+                    className="rack-scrub-btn"
+                    disabled={!can("server.remote_access")}
+                    onClick={() => runNodeAction(selectedNode.id, "Open Remote Console", (n) => ({ ...n }))}
+                  >
+                    Open console/KVM
+                  </button>
+                  <button
+                    type="button"
+                    className="rack-scrub-btn"
+                    disabled={!can("server.network_storage")}
+                    onClick={() =>
+                      runNodeAction(selectedNode.id, "Toggle Network", (n) => ({
+                        ...n,
+                        networkEnabled: !n.networkEnabled,
+                      }))
+                    }
+                  >
+                    {selectedNode.networkEnabled ? "Disable network" : "Enable network"}
+                  </button>
+                  <button
+                    type="button"
+                    className="rack-scrub-btn"
+                    disabled={!can("server.network_storage")}
+                    onClick={() =>
+                      runNodeAction(selectedNode.id, "Toggle Storage", (n) => ({
+                        ...n,
+                        storageMounted: !n.storageMounted,
+                      }))
+                    }
+                  >
+                    {selectedNode.storageMounted ? "Unmount storage" : "Mount storage"}
+                  </button>
+                </div>
+                <div className="kv-list compact">
+                  <div>
+                    <span>Power</span>
+                    <strong>{selectedNode.powerState.toUpperCase()}</strong>
+                  </div>
+                  <div>
+                    <span>Maintenance</span>
+                    <strong>{selectedNode.maintenanceMode ? "ON" : "OFF"}</strong>
+                  </div>
+                  <div>
+                    <span>Network</span>
+                    <strong>{selectedNode.networkEnabled ? "ENABLED" : "DISABLED"}</strong>
+                  </div>
+                  <div>
+                    <span>Storage</span>
+                    <strong>{selectedNode.storageMounted ? "MOUNTED" : "UNMOUNTED"}</strong>
+                  </div>
+                </div>
                 {ssdReport ? (
                   <pre className="ssd-report mono">{ssdReport}</pre>
                 ) : null}
@@ -467,6 +645,7 @@ export default function ServerRackPage() {
             )}
 
             <p className="remap-status mono">{remapStatus}</p>
+            <p className="remap-status mono">{actionStatus}</p>
           </aside>
         </div>
       </div>

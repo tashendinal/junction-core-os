@@ -1,0 +1,19 @@
+{
+  "updatedAt": "2026-05-02T00:00:00.000Z",
+  "visionHttpUrl": null,
+  "notes": "Optional: set visionHttpUrl to override VISION_HTTP_URL for probes and docs.",
+  "standbyDashboardUrl": null,
+  "standbyVisionHttpUrl": null,
+  "standbyProcedureNotes": null,
+  "remoteAccessMode": "lan_only",
+  "allowedLoginCidrs": [
+    "127.0.0.0/8",
+    "10.0.0.0/8",
+    "192.168.0.0/16",
+    "172.16.0.0/12",
+    "112.134.165.72/32"
+  ],
+  "requireRemoteCode": false,
+  "operatorProfileMode": "multi_vendor_software_defined",
+  "singleVendorProfile": null
+}

@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "description": "Static Node ID → management IP. Node 01 = 10.0.0.101, Node 02 = 10.0.0.102, …",
+  "subnet_hint": "10.0.0.0/24",
+  "base_ip": "10.0.0.100",
+  "id_offset": 1,
+  "nodes": {
+    "01": { "ip": "10.0.0.101", "rack_u": 1, "default_role": "vision" },
+    "02": { "ip": "10.0.0.102", "rack_u": 2, "default_role": "vision" },
+    "03": { "ip": "10.0.0.103", "rack_u": 3, "default_role": "archive" },
+    "04": { "ip": "10.0.0.104", "rack_u": 4, "default_role": "archive" },
+    "05": { "ip": "10.0.0.105", "rack_u": 5, "default_role": "archive" },
+    "06": { "ip": "10.0.0.106", "rack_u": 6, "default_role": "ai_matcher" },
+    "07": { "ip": "10.0.0.107", "rack_u": 7, "default_role": "ai_matcher" },
+    "08": { "ip": "10.0.0.108", "rack_u": 8, "default_role": "vision" },
+    "09": { "ip": "10.0.0.109", "rack_u": 9, "default_role": "vision" },
+    "10": { "ip": "10.0.0.110", "rack_u": 10, "default_role": "archive" }
+  }
+}

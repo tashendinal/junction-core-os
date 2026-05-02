@@ -1,0 +1,12 @@
+[package]
+name = "iso-recorder"
+version = "0.1.0"
+edition = "2021"
+description = "Junction Core ISO recording agent (FFmpeg-based; demo or custom inputs)"
+
+[dependencies]
+axum = { version = "0.7", features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "process", "sync", "signal"] }
+libc = "0.2"

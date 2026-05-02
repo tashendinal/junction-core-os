@@ -1,7 +1,13 @@
 "use client";
 
+import { TopNav } from "./components/TopNav";
+import {
+  feedNdiPresence,
+  parseNdiSources,
+  type FeedDef,
+  type NdiSourceParsed,
+} from "../lib/ndiFeedStatus";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
 
 type CameraFeed = {
   id: string;
@@ -9,16 +15,22 @@ type CameraFeed = {
   resolution: string;
   bitrate: number;
   histogram: number[];
-  detected: boolean;
+  ndiPresence: "live" | "stale" | "standby";
+  ndiMatchedName: string | null;
+  ndiUrl?: string;
 };
 
-const FEEDS = [
+const FEEDS: FeedDef[] = [
   { id: "cam1", label: "CAM 1" },
   { id: "cam2", label: "CAM 2" },
   { id: "cam3", label: "CAM 3" },
 ];
 
-const WS_URL = "ws://localhost:9000/ws";
+const WS_URL = process.env.NEXT_PUBLIC_VISION_WS ?? "ws://localhost:9000/ws";
+
+const ALIAS_STORAGE_KEY = "junction-ndi-alias-v1";
+
+type NdiPreset = { id: string; label: string; programId: string; previewId: string; tbar: number };
 
 type SwitcherPayload = {
   type: "switcher";
@@ -47,9 +59,14 @@ export default function DashboardPage() {
     cam3: false,
   });
   const [timecode, setTimecode] = useState("00:00:00:00");
-  const [sourceMap, setSourceMap] = useState<Set<string>>(new Set());
-  const router = useRouter();
-  const pathname = usePathname();
+  const [currentNdiSources, setCurrentNdiSources] = useState<NdiSourceParsed[]>([]);
+  const [ndiLastSeen, setNdiLastSeen] = useState<Record<string, number>>({});
+  const [ndiScanMeta, setNdiScanMeta] = useState<{ scannedAtMs: number; intervalSec: number } | null>(null);
+  const [aliasByFeedId, setAliasByFeedId] = useState<Record<string, string>>({});
+  const [ndiPresets, setNdiPresets] = useState<NdiPreset[]>([]);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>("");
+  const [ndiMaxChannels, setNdiMaxChannels] = useState<number | null>(null);
+  const [visionHealthLine, setVisionHealthLine] = useState<string>("");
 
   const wsRef = useRef<WebSocket | null>(null);
   const previewRef = useRef(previewId);
@@ -97,14 +114,35 @@ export default function DashboardPage() {
         const payload = JSON.parse(event.data) as Record<string, unknown>;
         const msgType = typeof payload.type === "string" ? payload.type : undefined;
         const rawSources = payload.sources;
-        const ndiSources =
-          msgType === "ndi" && Array.isArray(rawSources)
-            ? (rawSources as string[])
-            : !msgType && Array.isArray(rawSources)
-              ? (rawSources as string[])
-              : null;
-        if (ndiSources) {
-          setSourceMap(new Set(ndiSources.map((item) => item.toLowerCase())));
+        if (msgType === "ndi" && Array.isArray(rawSources)) {
+          const parsed = parseNdiSources(rawSources);
+          setCurrentNdiSources(parsed);
+          const scanned =
+            typeof payload.scannedAtUnixMs === "number" ? payload.scannedAtUnixMs : Date.now();
+          const intervalSec =
+            typeof payload.scanIntervalSec === "number" ? payload.scanIntervalSec : 5;
+          setNdiScanMeta({ scannedAtMs: scanned, intervalSec });
+          setNdiLastSeen((prev) => {
+            const next = { ...prev };
+            for (const s of parsed) {
+              next[s.name.toLowerCase()] = scanned;
+            }
+            return next;
+          });
+          return;
+        }
+        if (!msgType && Array.isArray(rawSources)) {
+          const parsed = parseNdiSources(rawSources);
+          setCurrentNdiSources(parsed);
+          const scanned = Date.now();
+          setNdiScanMeta({ scannedAtMs: scanned, intervalSec: 5 });
+          setNdiLastSeen((prev) => {
+            const next = { ...prev };
+            for (const s of parsed) {
+              next[s.name.toLowerCase()] = scanned;
+            }
+            return next;
+          });
           return;
         }
         if (msgType === "switcher") {
@@ -125,6 +163,88 @@ export default function DashboardPage() {
       socket.close();
       wsRef.current = null;
     };
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(ALIAS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Record<string, string>;
+        if (parsed && typeof parsed === "object") {
+          setAliasByFeedId(parsed);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch("/api/ndi-presets", { credentials: "include" });
+        if (!r.ok) return;
+        const d = (await r.json()) as { presets?: NdiPreset[] };
+        if (cancelled || !Array.isArray(d.presets)) return;
+        setNdiPresets(d.presets);
+        if (d.presets[0]?.id) {
+          setSelectedPresetId(d.presets[0].id);
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch("/api/setup", { credentials: "include" });
+        if (!r.ok) return;
+        const d = (await r.json()) as { entitlements?: { ndiMaxChannels?: number | null } };
+        if (cancelled || !d.entitlements) return;
+        setNdiMaxChannels(
+          d.entitlements.ndiMaxChannels === undefined ? null : d.entitlements.ndiMaxChannels
+        );
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let iv: ReturnType<typeof setInterval>;
+    const tick = async () => {
+      try {
+        const r = await fetch("/api/vision/health", { cache: "no-store" });
+        const d = (await r.json()) as {
+          status?: string;
+          error?: string;
+          ndi?: { last_source_count?: number; last_scan_unix_ms?: number | null };
+          sync?: { ptp_lock?: string };
+        };
+        if (r.ok && d.status === "ok") {
+          const n = d.ndi?.last_source_count ?? "—";
+          const ptp = d.sync?.ptp_lock ?? "unknown";
+          setVisionHealthLine(`Vision OK · last discovery: ${n} source(s) · PTP: ${ptp}`);
+        } else {
+          setVisionHealthLine(typeof d.error === "string" ? d.error : "Vision health check failed");
+        }
+      } catch {
+        setVisionHealthLine("Vision HTTP proxy unreachable");
+      }
+    };
+    tick();
+    iv = setInterval(tick, 10_000);
+    return () => clearInterval(iv);
   }, []);
 
   useEffect(() => {
@@ -207,17 +327,60 @@ export default function DashboardPage() {
 
   useEffect(() => () => cancelAutoTransition(), [cancelAutoTransition]);
 
-  const cameraFeeds: CameraFeed[] = useMemo(
-    () =>
-      FEEDS.map((feed) => ({
+  const lastSeenMap = useMemo(() => new Map(Object.entries(ndiLastSeen)), [ndiLastSeen]);
+
+  const cameraFeeds: CameraFeed[] = useMemo(() => {
+    return FEEDS.map((feed) => {
+      const { presence, matchedName, urlAddress } = feedNdiPresence(
+        feed,
+        currentNdiSources,
+        lastSeenMap,
+        aliasByFeedId
+      );
+      return {
         ...feed,
         resolution: "1080p59.94",
         bitrate: 90 + Math.round(Math.random() * 70),
         histogram: Array.from({ length: 20 }, () => Math.round(25 + Math.random() * 75)),
-        detected: sourceMap.has(feed.label.toLowerCase()),
-      })),
-    [sourceMap, timecode]
+        ndiPresence: presence,
+        ndiMatchedName: matchedName,
+        ndiUrl: urlAddress,
+      };
+    });
+  }, [currentNdiSources, lastSeenMap, aliasByFeedId, timecode]);
+
+  const liveNdiFeedCount = useMemo(
+    () => cameraFeeds.filter((f) => f.ndiPresence === "live").length,
+    [cameraFeeds]
   );
+  const previewFeed = useMemo(() => cameraFeeds.find((f) => f.id === previewId) || null, [cameraFeeds, previewId]);
+  const programFeed = useMemo(() => cameraFeeds.find((f) => f.id === programId) || null, [cameraFeeds, programId]);
+
+  const persistAlias = useCallback((feedId: string, value: string) => {
+    setAliasByFeedId((prev) => {
+      const next = { ...prev, [feedId]: value };
+      try {
+        localStorage.setItem(ALIAS_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }, []);
+
+  const applyRoutingPreset = useCallback(() => {
+    const preset = ndiPresets.find((p) => p.id === selectedPresetId);
+    if (!preset) return;
+    cancelAutoTransition();
+    setProgramId(preset.programId);
+    setPreviewId(preset.previewId);
+    setTbar01(preset.tbar);
+    sendSwitcher({
+      programId: preset.programId,
+      previewId: preset.previewId,
+      tbar: preset.tbar,
+    });
+  }, [ndiPresets, selectedPresetId, sendSwitcher, cancelAutoTransition]);
 
   const bondPath = linePath(bondWave, 260, 80);
 
@@ -235,38 +398,8 @@ export default function DashboardPage() {
   };
 
   return (
-    <main className="tactical-root">
-      <nav className="top-nav tactile-node">
-        <div className="nav-logo-slot" aria-label="Junction Core logo slot">
-          <span>JUNCTION CORE</span>
-        </div>
-        <div className="top-nav-tabs top-nav-tabs-four">
-          <button
-            className={`top-tab ${pathname === "/" ? "active" : ""}`}
-            onClick={() => router.push("/")}
-          >
-            [SWITCHER]
-          </button>
-          <button
-            className={`top-tab ${pathname === "/talkback" ? "active" : ""}`}
-            onClick={() => router.push("/talkback")}
-          >
-            [COMMS]
-          </button>
-          <button
-            className={`top-tab ${pathname === "/system-health" ? "active" : ""}`}
-            onClick={() => router.push("/system-health")}
-          >
-            [STORAGE/STREAM]
-          </button>
-          <button
-            className={`top-tab ${pathname === "/server-rack" ? "active" : ""}`}
-            onClick={() => router.push("/server-rack")}
-          >
-            [RACK]
-          </button>
-        </div>
-      </nav>
+    <main className="tactical-root switcher-page">
+      <TopNav />
       <div className="grid-shell">
         <aside className="left-pane tactile-node">
           <h2 className="pane-title">Server & Network Matrix</h2>
@@ -299,6 +432,38 @@ export default function DashboardPage() {
               <strong>{nvmeWrite.toFixed(0)} MB/s</strong>
             </div>
           </section>
+          <section className="block">
+            <p className="technical-label">NDI network budget</p>
+            <p className="ndi-budget-hint">
+              Plan roughly 90–250 Mb/s per HX-class source on the 10GbE fabric; leave headroom for discovery,
+              audio, and disk IO.
+            </p>
+            {ndiScanMeta ? (
+              <p className="ndi-budget-hint">
+                Discovery tick: {ndiScanMeta.intervalSec}s · last server scan:{" "}
+                {new Date(ndiScanMeta.scannedAtMs).toLocaleTimeString()}
+              </p>
+            ) : null}
+          </section>
+          <section className="block">
+            <p className="technical-label">NDI name match (substring)</p>
+            <p className="ndi-budget-hint">
+              If device names differ from CAM 1…3, set a substring that appears in the NDI source name.
+            </p>
+            <div className="alias-grid">
+              {FEEDS.map((feed) => (
+                <label key={`alias-${feed.id}`} className="alias-field">
+                  <span>{feed.label}</span>
+                  <input
+                    type="text"
+                    placeholder={feed.label}
+                    value={aliasByFeedId[feed.id] ?? ""}
+                    onChange={(e) => persistAlias(feed.id, e.target.value)}
+                  />
+                </label>
+              ))}
+            </div>
+          </section>
         </aside>
 
         <section className="center-pane">
@@ -309,15 +474,30 @@ export default function DashboardPage() {
                 {cameraFeeds.map((feed) => {
                   const tallyClass =
                     programId === feed.id ? "program" : previewId === feed.id ? "preview" : "standby";
+                  const ndiLabel =
+                    feed.ndiPresence === "live" ? "LIVE" : feed.ndiPresence === "stale" ? "STALE" : "STBY";
                   return (
-                    <article key={feed.id} className={`cam-tile ${tallyClass}`}>
+                    <article
+                      key={feed.id}
+                      className={`cam-tile ${tallyClass} ${feed.ndiPresence === "stale" ? "stale-signal" : ""}`}
+                    >
+                      {programId === feed.id ? <span className="tally-ribbon pgm">PGM</span> : null}
+                      {previewId === feed.id && programId !== feed.id ? (
+                        <span className="tally-ribbon pvw">PVW</span>
+                      ) : null}
                       <div className="cam-head">
                         <strong>{feed.label}</strong>
-                        <span>{feed.detected ? "LIVE" : "STBY"}</span>
+                        <span className={`ndi-presence ndi-${feed.ndiPresence}`}>{ndiLabel}</span>
                       </div>
                       <div className="osd">
                         <div>NDI {feed.bitrate} Mbps</div>
                         <div>{feed.resolution}</div>
+                        {feed.ndiMatchedName ? (
+                          <div className="ndi-match-line" title={feed.ndiUrl || feed.ndiMatchedName}>
+                            Src: {feed.ndiMatchedName}
+                          </div>
+                        ) : null}
+                        {feed.ndiUrl ? <div className="ndi-url-line">{feed.ndiUrl}</div> : null}
                         <div className="hist">
                           {feed.histogram.map((h, i) => (
                             <span key={`${feed.id}-h-${i}`} style={{ height: `${h}%` }} />
@@ -387,6 +567,51 @@ export default function DashboardPage() {
 
           <section className="switch-pane tactile-node">
             <h2 className="pane-title">Switching Bus</h2>
+            <div className="switch-preview-grid">
+              <article className="switch-preview-card switch-preview-card--program">
+                <header>
+                  <span className="switch-preview-tag">PROGRAM</span>
+                  <strong>{programFeed?.label ?? programId.toUpperCase()}</strong>
+                </header>
+                <div className="switch-preview-screen">
+                  <span>{programFeed?.resolution ?? "1080p59.94"}</span>
+                </div>
+                <p className="switch-preview-meta">
+                  {programFeed?.ndiMatchedName ? `Src: ${programFeed.ndiMatchedName}` : "NDI source awaiting match"}
+                </p>
+              </article>
+              <article className="switch-preview-card switch-preview-card--preview">
+                <header>
+                  <span className="switch-preview-tag">PREVIEW</span>
+                  <strong>{previewFeed?.label ?? previewId.toUpperCase()}</strong>
+                </header>
+                <div className="switch-preview-screen">
+                  <span>{previewFeed?.resolution ?? "1080p59.94"}</span>
+                </div>
+                <p className="switch-preview-meta">
+                  {previewFeed?.ndiMatchedName ? `Src: ${previewFeed.ndiMatchedName}` : "NDI source awaiting match"}
+                </p>
+              </article>
+            </div>
+            <div className="routing-preset-row">
+              <label className="routing-preset-field">
+                <span className="technical-label">Routing preset</span>
+                <select
+                  value={selectedPresetId}
+                  onChange={(e) => setSelectedPresetId(e.target.value)}
+                  disabled={ndiPresets.length === 0}
+                >
+                  {ndiPresets.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button type="button" className="preset-apply-btn" onClick={applyRoutingPreset}>
+                Apply preset
+              </button>
+            </div>
             <div className="bus-layout">
               <div className="bus-left">
                 <p className="technical-label">PGM</p>
@@ -497,8 +722,21 @@ export default function DashboardPage() {
             <p className="technical-label">System</p>
             <div className="sys-lines">
               <span>{connected ? "Vision WS + tally sync" : "Vision WS Offline"}</span>
+              <span>{visionHealthLine || "Vision HTTP —"}</span>
               <span>{timecode} @24p</span>
+              {ndiMaxChannels != null ? (
+                <span
+                  className={
+                    liveNdiFeedCount > ndiMaxChannels ? "license-warn" : "license-ok"
+                  }
+                >
+                  License: {liveNdiFeedCount} live NDI / {ndiMaxChannels} entitled inputs
+                </span>
+              ) : null}
               <span>Hotkeys: [1,2,3] PVW [Space] CUT [Enter] AUTO</span>
+              <span className="sys-hint">
+                REST bus: PUT /api/vision/switcher (session + server.health) — Companion / automation.
+              </span>
             </div>
           </section>
         </aside>

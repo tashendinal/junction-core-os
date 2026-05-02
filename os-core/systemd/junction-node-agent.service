@@ -1,0 +1,15 @@
+[Unit]
+Description=Junction Core node heartbeat (UDP cluster discovery)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=JUNCTION_HEARTBEAT_PORT=47777
+# Environment=JUNCTION_BIND_IFACE=bond0
+ExecStart=/usr/local/bin/junction-node-agent
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,17 @@
+[Unit]
+Description=Junction cluster.json writer (UDP heartbeat listener)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Adjust paths after copying repo to /opt/junction-core-os
+ExecStart=/usr/bin/python3 /opt/junction-core-os/os-core/remap_nodes.py \
+  --cluster /etc/junction/cluster.json \
+  --ip-map /etc/junction/node-ip-map.json \
+  --bind 0.0.0.0 --port 47777
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
